@@ -694,14 +694,16 @@
       targetX,
       targetY,
       progress: 0,
-      isHit
+      isHit,
+      accuracyScore: Math.round(needlePos * 100)
+      
     };
   }
 
   function resolveEggImpact(egg) {
     if (egg.isHit) {
       hits++;
-      score += POINTS_HIT;
+      score += egg.accuracyScore;
       waleadShake = 14;
 
       // Yellow yolk & shell splat on Walead
@@ -715,7 +717,7 @@
       floatingTexts.push({
         x: waleadPos.x,
         y: waleadPos.y - 34,
-        text: `+${POINTS_HIT}`,
+        text: `+${egg.accuracyScore}`,
         color: "#7ee868",
         alpha: 1.0
       });
