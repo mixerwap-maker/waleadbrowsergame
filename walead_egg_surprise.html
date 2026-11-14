@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Walead egg surprise</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0b1610;
+      color: #f8fafc;
+      font-family: 'Fredoka', sans-serif;
+      overflow: hidden;
+      height: 100dvh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom retro-arcade button styling */
+    .arcade-btn {
+      background: linear-gradient(180deg, #facc15 0%, #eab308 55%, #ca8a04 100%);
+      color: #1c1917;
+      border: 3px solid #fef08a;
+      box-shadow: 0 6px 0 #854d0e, 0 12px 24px rgba(0, 0, 0, 0.55);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+    }
+
+    .arcade-btn:hover:not(:disabled) {
+      filter: brightness(1.07);
+      transform: translateY(-1px);
+      box-shadow: 0 7px 0 #854d0e, 0 14px 28px rgba(0, 0, 0, 0.6);
+    }
+
+    .arcade-btn:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #854d0e, 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .arcade-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: translateY(2px);
+      box-shadow: 0 3px 0 #713f12;
+    }
+
+    .throw-btn {
+      background: linear-gradient(180deg, #22c55e 0%, #16a34a 55%, #15803d 100%);
+      color: #ffffff;
+      border: 3px solid #86efac;
+      box-shadow: 0 6px 0 #14532d, 0 10px 25px rgba(22, 163, 74, 0.45);
+      transition: transform 0.07s ease, box-shadow 0.07s ease;
+    }
+
+    .throw-btn:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    .throw-btn:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #14532d;
+    }
+
+    .throw-btn:disabled {
+      background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+      border-color: #94a3b8;
+      box-shadow: 0 4px 0 #1e293b;
+      cursor: not-allowed;
+    }
+
+    /* Subtitle speech banner animation */
+    @keyframes popSubtitle {
+      0% { transform: scale(0.86) translateY(8px); opacity: 0; }
+      15% { transform: scale(1.03) translateY(0); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .subtitle-pop {
+      animation: popSubtitle 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="relative select-none">
+
+  <!-- TOP HUD BAR -->
+  <header class="w-full bg-[#112218]/95 border-b-2 border-[#234230] px-3 py-2 sm:px-6 sm:py-2.5 flex items-center justify-between gap-2 z-20 shadow-lg shrink-0">
+    <!-- Left: Game Title & Mute Toggle -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xl sm:text-2xl">🥚</span>
+        <h1 class="text-base sm:text-xl font-bold tracking-wide text-amber-300 drop-shadow">
+          Walead egg surprise
+        </h1>
+      </div>
+      <button id="muteBtn" title="Toggle Sound" class="ml-1 px-2.5 py-1.5 rounded-xl bg-[#1a3324] hover:bg-[#244632] border border-[#356347] text-xs sm:text-sm font-semibold text-emerald-100 flex items-center gap-1.5 transition cursor-pointer">
+        <span id="muteIcon">🔊</span>
+        <span id="muteLabel" class="hidden sm:inline">Sound ON</span>
+      </button>
+    </div>
+
+    <!-- Center: 4-Minute Countdown Timer -->
+    <div class="flex items-center gap-2 bg-[#0a140e] border-2 border-[#2e573f] px-3 sm:px-5 py-1 rounded-2xl shadow-inner">
+      <span class="text-xs uppercase tracking-wider text-emerald-400 font-bold hidden md:inline">Time Left</span>
+      <span id="timerDisplay" class="mono-num text-lg sm:text-2xl font-extrabold text-amber-300 tracking-wider">04:00</span>
+    </div>
+
+    <!-- Right: Live Score & Stats -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <div class="hidden md:flex items-center gap-3 text-xs font-semibold bg-[#172e21] px-3 py-1.5 rounded-xl border border-[#2b523c]">
+        <span class="text-emerald-300">Hits: <strong id="hudHits" class="mono-num text-white">0</strong></span>
+        <span class="text-rose-300">Misses: <strong id="hudMisses" class="mono-num text-white">0</strong></span>
+        <span class="text-amber-200">Acc: <strong id="hudAcc" class="mono-num text-white">0%</strong></span>
+      </div>
+      <div class="bg-[#183022] border-2 border-amber-400/50 px-3 sm:px-4 py-1 rounded-2xl flex items-center gap-2">
+        <span class="text-xs uppercase font-bold text-amber-200/80">Score</span>
+        <span id="scoreDisplay" class="mono-num text-lg sm:text-2xl font-extrabold text-white">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GAME STAGE (CANVAS + FLOATING OVERLAYS) -->
+  <main id="canvasContainer" class="relative flex-1 w-full overflow-hidden bg-[#15291d]">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- LIVE TRANSLATION / SUBTITLE CAPTION BAR -->
+    <div id="captionBanner" class="pointer-events-none absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 z-10 w-[92%] max-w-xl hidden">
+      <div id="captionBox" class="subtitle-pop rounded-2xl border-2 px-4 py-2.5 sm:px-6 sm:py-3 shadow-2xl backdrop-blur-md text-center">
+        <div id="captionSpeaker" class="text-[11px] sm:text-xs font-bold uppercase tracking-widest mb-0.5 opacity-90">
+          WALEAD99 SAYS:
+        </div>
+        <div id="captionText" class="text-base sm:text-xl md:text-2xl font-extrabold tracking-wide drop-shadow">
+          "Aimbot!!!"
+        </div>
+      </div>
+    </div>
+
+    <!-- IDLE STRATEGY HINT PILL (Bottom-left subtle reminder) -->
+    <div id="strategyPill" class="pointer-events-none hidden sm:flex items-center gap-2 absolute bottom-3 left-4 z-10 bg-[#0d1b13]/85 border border-[#2c523c] px-3 py-1.5 rounded-xl text-xs text-emerald-200/90 backdrop-blur-sm">
+      <span>🛡️</span>
+      <span>Hit: <strong class="text-emerald-400">+100</strong> | Miss: <strong class="text-rose-400">-25</strong> | Idle: <strong class="text-amber-300">0</strong> (Safe!)</span>
+    </div>
+
+    <!-- STARTING SCREEN OVERLAY -->
+    <div id="startOverlay" class="absolute inset-0 z-30 bg-[#09130d]/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="w-full max-w-lg bg-gradient-to-b from-[#162d20] to-[#0f1f16] border-2 border-[#36694b] rounded-3xl p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden">
+        <!-- Decorative top badge -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/40 text-amber-300 text-xs font-bold uppercase tracking-wider mb-3">
+          <span>🌲</span> Forest Clearing Showdown <span>🥚</span>
+        </div>
+
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-amber-300 tracking-tight drop-shadow-md mb-4">
+          Walead egg surprise
+        </h2>
+
+        <div class="bg-[#0a160f]/90 border border-[#274d37] rounded-2xl p-4 sm:p-5 mb-6 text-left shadow-inner">
+          <p class="text-emerald-50 text-base sm:text-lg leading-relaxed font-medium">
+            "Time for a omelette! Walead99 is finally caught and tied to a tree in the woods. Throw eggs at him and try to be as precise as can under a timer to dominate the scoreboard!"
+          </p>
+        </div>
+
+        <!-- Quick Rules Grid -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-6 text-xs sm:text-sm">
+          <div class="bg-[#12261b] border border-[#2a543c] rounded-2xl p-2.5">
+            <div class="text-emerald-400 font-extrabold text-base sm:text-lg">+100 PTS</div>
+            <div class="text-emerald-100/80">Direct Hit</div>
+          </div>
+          <div class="bg-[#12261b] border border-[#2a543c] rounded-2xl p-2.5">
+            <div class="text-rose-400 font-extrabold text-base sm:text-lg">-25 PTS</div>
+            <div class="text-emerald-100/80">Missed Throw</div>
+          </div>
+          <div class="bg-[#12261b] border border-[#2a543c] rounded-2xl p-2.5">
+            <div class="text-amber-300 font-extrabold text-base sm:text-lg">04:00</div>
+            <div class="text-emerald-100/80">Idle = Safe</div>
+          </div>
+        </div>
+
+        <button id="startBtn" class="arcade-btn w-full py-3.5 sm:py-4 rounded-2xl text-xl sm:text-2xl font-extrabold tracking-wide uppercase cursor-pointer">
+          🍳 START GAME
+        </button>
+        <p class="mt-3 text-xs text-emerald-300/70">
+          Press <kbd class="px-1.5 py-0.5 bg-[#1b3827] rounded border border-[#35694b] text-emerald-100">SPACE</kbd> or click to throw when the needle hits <span class="text-emerald-400 font-bold">GREEN</span>!
+        </p>
+      </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY ("Omelette is done!") -->
+    <div id="gameOverOverlay" class="hidden absolute inset-0 z-30 bg-[#08110c]/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+      <div class="w-full max-w-lg bg-gradient-to-b from-[#172f21] to-[#0e1e15] border-2 border-amber-400/60 rounded-3xl p-6 sm:p-8 shadow-2xl text-center my-auto">
+        <div class="text-4xl sm:text-5xl mb-2">🍳</div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-amber-300 tracking-tight mb-1">
+          Omelette is done!
+        </h2>
+        <p class="text-emerald-200/85 text-sm sm:text-base mb-5">
+          The 4-minute timer has expired! Here is your final damage report on Walead99:
+        </p>
+
+        <!-- Final Stats Card -->
+        <div class="bg-[#0a150f] border border-[#2b543c] rounded-2xl p-4 mb-5">
+          <div class="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-1">Final Score</div>
+          <div id="finalScore" class="mono-num text-4xl sm:text-5xl font-extrabold text-white mb-4">0</div>
+
+          <div class="grid grid-cols-3 gap-2 pt-3 border-t border-[#1e3d2b] text-xs sm:text-sm">
+            <div>
+              <div class="text-emerald-300/70">Eggs Hit</div>
+              <div id="finalHits" class="mono-num text-lg font-bold text-emerald-400">0</div>
+            </div>
+            <div>
+              <div class="text-emerald-300/70">Eggs Missed</div>
+              <div id="finalMisses" class="mono-num text-lg font-bold text-rose-400">0</div>
+            </div>
+            <div>
+              <div class="text-emerald-300/70">Accuracy</div>
+              <div id="finalAccuracy" class="mono-num text-lg font-bold text-amber-300">0%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Local Session Scoreboard Preview (Ready for global hookup) -->
+        <div class="bg-[#0d1c14] border border-[#244733] rounded-2xl p-3.5 mb-6 text-left">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-300">🏆 Session Best Scores</span>
+            <span class="text-[11px] text-emerald-400/70">Local Preview</span>
+          </div>
+          <div id="localLeaderboardList" class="space-y-1.5 text-xs sm:text-sm mono-num">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+
+        <button id="playAgainBtn" class="arcade-btn w-full py-3.5 rounded-2xl text-lg sm:text-xl font-extrabold uppercase tracking-wide cursor-pointer">
+          🔄 PLAY AGAIN
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM PRECISION BAR & THROW CONTROL DECK -->
+  <footer class="w-full bg-[#102017] border-t-2 border-[#254734] px-3 py-2.5 sm:px-6 sm:py-3.5 z-20 shrink-0 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
+      
+      <!-- Precision Meter Gauge -->
+      <div class="w-full flex-1">
+        <div class="flex items-center justify-between text-xs font-bold mb-1.5 px-1">
+          <span class="text-rose-400 uppercase tracking-wider">Miss Zone (Red)</span>
+          <span id="hitChanceReadout" class="mono-num text-emerald-300 bg-[#0a150f] px-2.5 py-0.5 rounded-lg border border-[#29523b]">
+            Hit Chance: 50%
+          </span>
+          <span class="text-emerald-400 uppercase tracking-wider">Bullseye (Green)</span>
+        </div>
+
+        <!-- Precision Bar Track (Red -> Yellow -> Green -> Yellow -> Red) -->
+        <div id="precisionTrack" class="relative w-full h-8 sm:h-10 rounded-2xl border-2 border-[#386b4e] overflow-hidden shadow-inner"
+             style="background: linear-gradient(90deg, #dc2626 0%, #ef4444 14%, #f59e0b 30%, #84cc16 42%, #16a34a 50%, #84cc16 58%, #f59e0b 70%, #ef4444 86%, #dc2626 100%);">
+          
+          <!-- Subtle Zone Tick Marks -->
+          <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-10 sm:w-14 bg-emerald-300/20 border-x border-emerald-200/50 pointer-events-none"></div>
+          <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-white/70 pointer-events-none"></div>
+
+          <!-- Fast Moving Needle -->
+          <div id="precisionNeedle" class="absolute top-0 bottom-0 w-2 sm:w-2.5 -ml-1 bg-white border-x-2 border-slate-950 shadow-[0_0_12px_#ffffff] rounded-full will-change-transform"
+               style="left: 50%;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Throw Egg Trigger Button -->
+      <button id="throwBtn" disabled class="throw-btn w-full sm:w-auto sm:min-w-[190px] py-2.5 sm:py-3.5 px-6 rounded-2xl text-base sm:text-lg font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shrink-0">
+        <span>🥚</span>
+        <span>THROW EGG</span>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * ============================================================================
+     * WALEAD EGG SURPRISE - COMPLETE BROWSER GAME ENGINE
+     * ============================================================================
+     * Features:
+     * - Top-down forest clearing canvas scene (Protagonist Celldweller vs Walead99 tied to tree)
+     * - Fast oscillating precision bar (Red -> Yellow -> Green) determining hit probability
+     * - Exact GitHub hosted .wav sound integration + live on-screen "translation" captions
+     * - Random ambient forest bird audio loop during gameplay
+     * - 4-minute (240s) timer, +100 hit / -25 miss / 0 idle risk-reward scoring
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. AUDIO CONFIGURATION & EXACT TRANSLATION MAPPING
+    // ----------------------------------------------------------------------------
+    const AUDIO_ASSETS = {
+      birds: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/00_birds.wav",
+      hits: [
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/01_aimbot.wav",
+          translation: "Aimbot!!!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/02_fu_celldweller.wav",
+          translation: "fuck you celldweller!!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/03_shankss.wav",
+          translation: "Shankss!!!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/04_shankssbro_wru.wav",
+          fallbackUrl: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/04_shanksbro_wru",
+          translation: "Shankss bro, where are you?"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/05_adminsstopthis.wav",
+          translation: "Admins, stop this!!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/06_adminshelp.wav",
+          translation: "admins, help!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/07_celldyoureacow.wav",
+          translation: "Celldweller, you're a cow!"
+        }
+      ],
+      misses: [
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/miss01_hahabot.wav",
+          translation: "haha, bot!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/miss02_stayinyourplane.wav",
+          translation: "stay in your plane!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/miss03_tryagainpunk.wav",
+          translation: "try again, punk!"
+        },
+        {
+          url: "https://github.com/mixerwap-maker/waleadbrowsergame/raw/refs/heads/main/miss04_furdillimore.wav",
+          translation: "Fuck your Dillimore!!!"
+        }
+      ]
+    };
+
+    // Preloaded audio pool
+    const soundBank = {
+      birds: null,
+      hits: [],
+      misses: [],
+      activeVoice: null,
+      isMuted: false,
+      audioCtx: null
+    };
+
+    function createAudioElement(url, fallbackUrl = null) {
+      const audio = new Audio();
+      audio.preload = "auto";
+      audio.src = url;
+      if (fallbackUrl) {
+        audio.addEventListener("error", () => {
+          if (audio.src !== fallbackUrl) {
+            audio.src = fallbackUrl;
+          }
+        }, { once: true });
+      }
+      return audio;
+    }
+
+    function initAudioBank() {
+      soundBank.birds = createAudioElement(AUDIO_ASSETS.birds);
+      soundBank.birds.volume = 0.42;
+
+      soundBank.hits = AUDIO_ASSETS.hits.map(item => ({
+        audio: createAudioElement(item.url, item.fallbackUrl),
+        translation: item.translation
+      }));
+
+      soundBank.misses = AUDIO_ASSETS.misses.map(item => ({
+        audio: createAudioElement(item.url, item.fallbackUrl),
+        translation: item.translation
+      }));
+    }
+
+    // Subtle synthesized sound effects (egg whoosh & splat) via Web Audio API
+    function playSynthEffect(type) {
+      if (soundBank.isMuted) return;
+      try {
+        if (!soundBank.audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          soundBank.audioCtx = new AudioContextClass();
+        }
+        if (soundBank.audioCtx.state === "suspended") {
+          soundBank.audioCtx.resume();
+        }
+        const ctx = soundBank.audioCtx;
+        const now = ctx.currentTime;
+
+        if (type === "throw") {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(640, now + 0.14);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === "splat") {
+          // Soft percussive thud + noise burst
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.exponentialRampToValueAtTime(42, now + 0.16);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.17);
+        }
+      } catch (e) {
+        // Ignore Web Audio autoplay restrictions if any
+      }
+    }
+
+    function playVoiceClip(entry, isHit) {
+      // Always show the translation caption immediately
+      showTranslationCaption(entry.translation, isHit);
+
+      if (soundBank.isMuted) return;
+
+      // Stop currently playing voice line so they don't overlap messily
+      if (soundBank.activeVoice) {
+        try {
+          soundBank.activeVoice.pause();
+          soundBank.activeVoice.currentTime = 0;
+        } catch (err) {}
+      }
+
+      const clip = entry.audio;
+      clip.volume = 0.95;
+      clip.currentTime = 0;
+      soundBank.activeVoice = clip;
+      clip.play().catch(() => {
+        // Fallback if browser blocks playback before gesture
+      });
+    }
+
+    // ----------------------------------------------------------------------------
+    // 2. GAME STATE & CONFIGURATION
+    // ----------------------------------------------------------------------------
+    const GAME_DURATION_SECONDS = 240; // 4 minutes
+    const POINTS_HIT = 100;
+    const POINTS_MISS = -25;
+
+    const state = {
+      status: "START", // "START" | "PLAYING" | "GAMEOVER"
+      timeLeft: GAME_DURATION_SECONDS,
+      score: 0,
+      hits: 0,
+      misses: 0,
+
+      // Precision needle state (0.0 to 1.0, where 0.5 is dead-center green)
+      needlePos: 0.5,
+      needleDir: 1,
+      needleSpeed: 1.45, // Oscillations per second across bar
+
+      // Active thrown egg projectile
+      projectile: null,
+
+      // Visual splatters & floating score popups
+      splatters: [],
+      floatingTexts: [],
+
+      // Walead animation & speech state
+      waleadHitAnim: 0,
+      waleadDodgeAnim: 0,
+      screenShake: 0,
+      speechBubble: {
+        text: "",
+        isHit: true,
+        timer: 0
+      },
+
+      // Forest scenery & ambient birds
+      trees: [],
+      grassTufts: [],
+      wildflowers: [],
+      ambientBirds: [],
+      nextBirdAudioTimer: 4.5,
+
+      // Timing
+      lastTimestamp: 0,
+      captionTimeoutId: null,
+      lastHitIndex: -1,
+      lastMissIndex: -1
+    };
+
+    // ----------------------------------------------------------------------------
+    // 3. DOM REFERENCES
+    // ----------------------------------------------------------------------------
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const canvasContainer = document.getElementById("canvasContainer");
+
+    const startOverlay = document.getElementById("startOverlay");
+    const gameOverOverlay = document.getElementById("gameOverOverlay");
+    const startBtn = document.getElementById("startBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const throwBtn = document.getElementById("throwBtn");
+    const muteBtn = document.getElementById("muteBtn");
+    const muteIcon = document.getElementById("muteIcon");
+    const muteLabel = document.getElementById("muteLabel");
+
+    const timerDisplay = document.getElementById("timerDisplay");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const hudHits = document.getElementById("hudHits");
+    const hudMisses = document.getElementById("hudMisses");
+    const hudAcc = document.getElementById("hudAcc");
+
+    const precisionNeedle = document.getElementById("precisionNeedle");
+    const hitChanceReadout = document.getElementById("hitChanceReadout");
+
+    const captionBanner = document.getElementById("captionBanner");
+    const captionBox = document.getElementById("captionBox");
+    const captionSpeaker = document.getElementById("captionSpeaker");
+    const captionText = document.getElementById("captionText");
+
+    const finalScore = document.getElementById("finalScore");
+    const finalHits = document.getElementById("finalHits");
+    const finalMisses = document.getElementById("finalMisses");
+    const finalAccuracy = document.getElementById("finalAccuracy");
+    const localLeaderboardList = document.getElementById("localLeaderboardList");
+
+    // ----------------------------------------------------------------------------
+    // 4. RESPONSIVE CANVAS & FOREST ENVIRONMENT GENERATION
+    // ----------------------------------------------------------------------------
+    let sceneMetrics = {
+      width: 800,
+      height: 600,
+      playerX: 400,
+      playerY: 480,
+      targetX: 400,
+      targetY: 165
+    };
+
+    function generateForestScenery(w, h) {
+      sceneMetrics.width = w;
+      sceneMetrics.height = h;
+      sceneMetrics.playerX = w * 0.5;
+      sceneMetrics.playerY = h * 0.81;
+      sceneMetrics.targetX = w * 0.5;
+      sceneMetrics.targetY = Math.max(135, h * 0.25);
+
+      // Generate dense woods around top & side edges, leaving a clear opening in front
+      const trees = [];
+      const treeCount = Math.max(24, Math.floor((w + h) / 34));
+
+      for (let i = 0; i < treeCount; i++) {
+        let tx, ty, radius;
+        if (i < treeCount * 0.52) {
+          // Dense back forest wall behind Walead's tree
+          tx = (w / (treeCount * 0.52)) * i + (Math.sin(i * 19.3) * 28);
+          ty = Math.max(20, sceneMetrics.targetY - 68 + (Math.cos(i * 7.1) * 32));
+          radius = 34 + (i % 4) * 8;
+        } else if (i < treeCount * 0.76) {
+          // Left forest border
+          const t = (i - treeCount * 0.52) / (treeCount * 0.24);
+          tx = 18 + Math.sin(i * 5.7) * 36;
+          ty = sceneMetrics.targetY - 20 + t * (h * 0.78);
+          radius = 32 + (i % 3) * 9;
+        } else {
+          // Right forest border
+          const t = (i - treeCount * 0.76) / (treeCount * 0.24);
+          tx = w - 18 - Math.abs(Math.cos(i * 4.3)) * 36;
+          ty = sceneMetrics.targetY - 20 + t * (h * 0.78);
+          radius = 32 + (i % 3) * 9;
+        }
+
+        trees.push({
+          x: tx,
+          y: ty,
+          r: radius,
+          shade: i % 3,
+          swayOffset: i * 1.3
+        });
+      }
+
+      // Sort trees top-to-bottom for proper overlapping depth
+      trees.sort((a, b) => a.y - b.y);
+      state.trees = trees;
+
+      // Grass tufts & wildflowers in the clearing
+      state.grassTufts = [];
+      for (let i = 0; i < 45; i++) {
+        state.grassTufts.push({
+          rx: 0.12 + ((i * 73) % 76) / 100,
+          ry: 0.24 + ((i * 41) % 66) / 100,
+          size: 4 + (i % 4)
+        });
+      }
+
+      state.wildflowers = [];
+      const flowerColors = ["#fef08a", "#ffffff", "#fda4af", "#93c5fd"];
+      for (let i = 0; i < 18; i++) {
+        state.wildflowers.push({
+          rx: 0.15 + ((i * 59) % 70) / 100,
+          ry: 0.28 + ((i * 83) % 60) / 100,
+          color: flowerColors[i % flowerColors.length]
+        });
+      }
+    }
+
+    function resizeCanvas() {
+      const rect = canvasContainer.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      generateForestScenery(rect.width, rect.height);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+
+    // ----------------------------------------------------------------------------
+    // 5. PRECISION METER & PROBABILITY LOGIC
+    // ----------------------------------------------------------------------------
+    /**
+     * Calculates hit probability (0.04 to 0.99) based on needlePos (0 to 1).
+     * 0.5 is dead center (brightest green). 0.0 and 1.0 are far edges (deep red).
+     */
+    function calculateHitProbability(needlePos) {
+      const distFromCenter = Math.abs(needlePos - 0.5) * 2; // 0 at center, 1 at edges
+      // Smooth bell-like curve so green center is super rewarding & red edges are risky
+      const greenness = Math.max(0, 1 - distFromCenter);
+      const probability = 0.04 + Math.pow(greenness, 1.55) * 0.95;
+      return Math.min(0.99, Math.max(0.04, probability));
+    }
+
+    function updatePrecisionUI() {
+      const pct = (state.needlePos * 100).toFixed(2);
+      precisionNeedle.style.left = `${pct}%`;
+
+      const prob = calculateHitProbability(state.needlePos);
+      const probPercent = Math.round(prob * 100);
+      hitChanceReadout.textContent = `Hit Chance: ${probPercent}%`;
+
+      if (probPercent >= 75) {
+        hitChanceReadout.className = "mono-num text-emerald-300 bg-[#0a150f] px-2.5 py-0.5 rounded-lg border border-emerald-500/60";
+      } else if (probPercent >= 40) {
+        hitChanceReadout.className = "mono-num text-amber-300 bg-[#0a150f] px-2.5 py-0.5 rounded-lg border border-amber-500/60";
+      } else {
+        hitChanceReadout.className = "mono-num text-rose-400 bg-[#0a150f] px-2.5 py-0.5 rounded-lg border border-rose-500/60";
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. THROWING MECHANICS & OUTCOME RESOLUTION
+    // ----------------------------------------------------------------------------
+    function triggerThrowEgg() {
+      if (state.status !== "PLAYING") return;
+      if (state.projectile !== null) return; // Wait until current egg lands
+
+      const hitProb = calculateHitProbability(state.needlePos);
+      const isHit = Math.random() < hitProb;
+
+      // Determine landing spot
+      let endX = sceneMetrics.targetX;
+      let endY = sceneMetrics.targetY;
+
+      if (isHit) {
+        // Land right on Walead / tree trunk
+        endX += (Math.random() - 0.5) * 26;
+        endY += (Math.random() - 0.5) * 28;
+      } else {
+        // Veer off to the left or right into the bushes/grass
+        const side = Math.random() < 0.5 ? -1 : 1;
+        endX += side * (65 + Math.random() * 85);
+        endY += (Math.random() - 0.5) * 55;
+      }
+
+      state.projectile = {
+        startX: sceneMetrics.playerX + 16,
+        startY: sceneMetrics.playerY - 12,
+        endX,
+        endY,
+        progress: 0,
+        duration: 0.34, // Fast, snappy throw arc (340ms)
+        isHit,
+        spin: 0
+      };
+
+      throwBtn.disabled = true;
+      playSynthEffect("throw");
+    }
+
+    function resolveEggImpact(proj) {
+      playSynthEffect("splat");
+
+      if (proj.isHit) {
+        state.score += POINTS_HIT;
+        state.hits += 1;
+        state.waleadHitAnim = 1.0;
+        state.screenShake = 10;
+
+        // Add yolk & shell splatter onto Walead/tree (stored as relative offset to target)
+        state.splatters.push({
+          dx: proj.endX - sceneMetrics.targetX,
+          dy: proj.endY - sceneMetrics.targetY,
+          isHit: true,
+          radius: 11 + Math.random() * 7,
+          seed: Math.random() * 100
+        });
+
+        // Floating +100 popup
+        state.floatingTexts.push({
+          x: proj.endX,
+          y: proj.endY - 24,
+          text: `+${POINTS_HIT}`,
+          color: "#4ade80",
+          life: 1.0
+        });
+
+        // Pick random hit voice clip (avoid repeating same line twice in a row)
+        let idx = Math.floor(Math.random() * soundBank.hits.length);
+        if (soundBank.hits.length > 1 && idx === state.lastHitIndex) {
+          idx = (idx + 1) % soundBank.hits.length;
+        }
+        state.lastHitIndex = idx;
+        playVoiceClip(soundBank.hits[idx], true);
+
+      } else {
+        state.score += POINTS_MISS;
+        state.misses += 1;
+        state.waleadDodgeAnim = 1.0;
+
+        // Add missed egg splatter on the ground/bushes
+        state.splatters.push({
+          dx: proj.endX - sceneMetrics.targetX,
+          dy: proj.endY - sceneMetrics.targetY,
+          isHit: false,
+          radius: 10 + Math.random() * 6,
+          seed: Math.random() * 100
+        });
+
+        // Floating -25 popup
+        state.floatingTexts.push({
+          x: proj.endX,
+          y: proj.endY - 16,
+          text: `${POINTS_MISS}`,
+          color: "#fb7185",
+          life: 1.0
+        });
+
+        // Pick random miss voice clip
+        let idx = Math.floor(Math.random() * soundBank.misses.length);
+        if (soundBank.misses.length > 1 && idx === state.lastMissIndex) {
+          idx = (idx + 1) % soundBank.misses.length;
+        }
+        state.lastMissIndex = idx;
+        playVoiceClip(soundBank.misses[idx], false);
+      }
+
+      // Cap splatter array size so performance stays buttery smooth
+      if (state.splatters.length > 45) {
+        state.splatters.shift();
+      }
+
+      updateHUD();
+      if (state.status === "PLAYING") {
+        throwBtn.disabled = false;
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 7. TRANSLATION SUBTITLE & SPEECH BUBBLE DISPLAY
+    // ----------------------------------------------------------------------------
+    function showTranslationCaption(text, isHit) {
+      // Update Canvas Speech Bubble
+      state.speechBubble.text = text;
+      state.speechBubble.isHit = isHit;
+      state.speechBubble.timer = 3.2;
+
+      // Update Top Banner Caption
+      captionBanner.classList.remove("hidden");
+      captionBox.classList.remove("subtitle-pop");
+      void captionBox.offsetWidth; // Force reflow to re-trigger animation
+      captionBox.classList.add("subtitle-pop");
+
+      if (isHit) {
+        captionBox.className = "subtitle-pop rounded-2xl border-2 border-emerald-400 bg-[#0d2818]/95 px-4 py-2.5 sm:px-6 sm:py-3 shadow-2xl backdrop-blur-md text-center";
+        captionSpeaker.className = "text-[11px] sm:text-xs font-bold uppercase tracking-widest mb-0.5 text-emerald-300";
+        captionSpeaker.textContent = "🥚 HIT! WALEAD99 SAYS:";
+        captionText.className = "text-base sm:text-xl md:text-2xl font-extrabold tracking-wide text-white drop-shadow";
+      } else {
+        captionBox.className = "subtitle-pop rounded-2xl border-2 border-rose-400 bg-[#2b0f16]/95 px-4 py-2.5 sm:px-6 sm:py-3 shadow-2xl backdrop-blur-md text-center";
+        captionSpeaker.className = "text-[11px] sm:text-xs font-bold uppercase tracking-widest mb-0.5 text-rose-300";
+        captionSpeaker.textContent = "💨 MISS! WALEAD99 TAUNTS:";
+        captionText.className = "text-base sm:text-xl md:text-2xl font-extrabold tracking-wide text-amber-200 drop-shadow";
+      }
+
+      captionText.textContent = `"${text}"`;
+
+      if (state.captionTimeoutId) {
+        clearTimeout(state.captionTimeoutId);
+      }
+      state.captionTimeoutId = setTimeout(() => {
+        captionBanner.classList.add("hidden");
+      }, 3200);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 8. AMBIENT BIRDS AUDIO & VISUAL FLOCK
+    // ----------------------------------------------------------------------------
+    function triggerAmbientBirds() {
+      // Spawn 2-3 visual birds gliding across the forest canopy
+      const count = 2 + Math.floor(Math.random() * 2);
+      const fromLeft = Math.random() < 0.5;
+      for (let i = 0; i < count; i++) {
+        state.ambientBirds.push({
+          x: fromLeft ? -30 - i * 28 : sceneMetrics.width + 30 + i * 28,
+          y: 45 + Math.random() * (sceneMetrics.height * 0.35),
+          vx: (fromLeft ? 1 : -1) * (85 + Math.random() * 45),
+          vy: (Math.random() - 0.5) * 18,
+          wingPhase: i * 1.4
+        });
+      }
+
+      // Play 00_birds.wav
+      if (!soundBank.isMuted && soundBank.birds) {
+        try {
+          soundBank.birds.currentTime = 0;
+          soundBank.birds.play().catch(() => {});
+        } catch (e) {}
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 9. HUD, TIMER & GAME LIFECYCLE
+    // ----------------------------------------------------------------------------
+    function formatTime(seconds) {
+      const clamped = Math.max(0, Math.ceil(seconds));
+      const mins = Math.floor(clamped / 60);
+      const secs = clamped % 60;
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    function updateHUD() {
+      timerDisplay.textContent = formatTime(state.timeLeft);
+      scoreDisplay.textContent = state.score;
+      hudHits.textContent = state.hits;
+      hudMisses.textContent = state.misses;
+
+      const totalThrows = state.hits + state.misses;
+      const acc = totalThrows > 0 ? Math.round((state.hits / totalThrows) * 100) : 0;
+      hudAcc.textContent = `${acc}%`;
+
+      // Highlight timer red when under 20 seconds
+      if (state.timeLeft <= 20 && state.status === "PLAYING") {
+        timerDisplay.classList.remove("text-amber-300");
+        timerDisplay.classList.add("text-rose-400");
+      } else {
+        timerDisplay.classList.remove("text-rose-400");
+        timerDisplay.classList.add("text-amber-300");
+      }
+    }
+
+    function startGame() {
+      // Unlock audio elements on user gesture
+      if (soundBank.birds) {
+        soundBank.birds.play().then(() => {
+          soundBank.birds.pause();
+          soundBank.birds.currentTime = 0;
+        }).catch(() => {});
+      }
+
+      state.status = "PLAYING";
+      state.timeLeft = GAME_DURATION_SECONDS;
+      state.score = 0;
+      state.hits = 0;
+      state.misses = 0;
+      state.needlePos = 0.5;
+      state.needleDir = 1;
+      state.projectile = null;
+      state.splatters = [];
+      state.floatingTexts = [];
+      state.waleadHitAnim = 0;
+      state.waleadDodgeAnim = 0;
+      state.speechBubble.timer = 0;
+      state.nextBirdAudioTimer = 2.0; // First bird chirp happens shortly after start
+
+      startOverlay.classList.add("hidden");
+      gameOverOverlay.classList.add("hidden");
+      captionBanner.classList.add("hidden");
+      throwBtn.disabled = false;
+
+      updateHUD();
+      updatePrecisionUI();
+    }
+
+    function endGame() {
+      state.status = "GAMEOVER";
+      state.timeLeft = 0;
+      state.projectile = null;
+      throwBtn.disabled = true;
+      captionBanner.classList.add("hidden");
+
+      updateHUD();
+
+      // Populate Game Over modal stats
+      const totalThrows = state.hits + state.misses;
+      const acc = totalThrows > 0 ? Math.round((state.hits / totalThrows) * 100) : 0;
+
+      finalScore.textContent = state.score;
+      finalHits.textContent = state.hits;
+      finalMisses.textContent = state.misses;
+      finalAccuracy.textContent = `${acc}%`;
+
+      saveAndRenderLocalLeaderboard(state.score, acc);
+      gameOverOverlay.classList.remove("hidden");
+    }
+
+    function saveAndRenderLocalLeaderboard(newScore, acc) {
+      const STORAGE_KEY = "walead_egg_surprise_scores";
+      let scores = [];
+      try {
+        scores = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch (e) {
+        scores = [];
+      }
+
+      scores.push({
+        name: "CELLDWELLER (You)",
+        score: newScore,
+        acc: acc,
+        date: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      });
+
+      scores.sort((a, b) => b.score - a.score);
+      scores = scores.slice(0, 5);
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+      } catch (e) {}
+
+      localLeaderboardList.innerHTML = scores.map((entry, idx) => `
+        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg ${idx === 0 ? "bg-amber-400/15 border border-amber-400/40 text-amber-200" : "bg-[#12261b] text-emerald-100"}">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-amber-400">#${idx + 1}</span>
+            <span>${entry.name}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-emerald-300/75 text-xs">${entry.acc}% acc</span>
+            <span class="font-extrabold">${entry.score} pts</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // ----------------------------------------------------------------------------
+    // 10. TOP-DOWN CANVAS RENDERING
+    // ----------------------------------------------------------------------------
+    function drawForestScene(timeSec) {
+      const w = sceneMetrics.width;
+      const h = sceneMetrics.height;
+
+      ctx.save();
+
+      // Apply subtle camera shake on direct hit
+      if (state.screenShake > 0) {
+        const sx = (Math.random() - 0.5) * state.screenShake;
+        const sy = (Math.random() - 0.5) * state.screenShake;
+        ctx.translate(sx, sy);
+      }
+
+      // 1. Base Forest Clearing Grass
+      const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.55, 30, w * 0.5, h * 0.55, Math.max(w, h) * 0.75);
+      bgGrad.addColorStop(0, "#3b7a47");
+      bgGrad.addColorStop(0.65, "#2b5e36");
+      bgGrad.addColorStop(1, "#193b22");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // 2. Dirt Path / Clearing Patch between Celldweller & Walead's Tree
+      ctx.save();
+      ctx.fillStyle = "rgba(133, 104, 68, 0.28)";
+      ctx.beginPath();
+      ctx.ellipse(w * 0.5, h * 0.53, Math.min(180, w * 0.34), h * 0.34, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 3. Grass Tufts & Wildflowers
+      ctx.strokeStyle = "#4d9458";
+      ctx.lineWidth = 2;
+      for (const g of state.grassTufts) {
+        const gx = g.rx * w;
+        const gy = g.ry * h;
+        ctx.beginPath();
+        ctx.moveTo(gx, gy);
+        ctx.lineTo(gx - g.size * 0.6, gy - g.size);
+        ctx.moveTo(gx, gy);
+        ctx.lineTo(gx + g.size * 0.6, gy - g.size * 0.9);
+        ctx.stroke();
+      }
+
+      for (const f of state.wildflowers) {
+        ctx.fillStyle = f.color;
+        ctx.beginPath();
+        ctx.arc(f.rx * w, f.ry * h, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4. Missed Egg Splatters on the Ground
+      for (const sp of state.splatters) {
+        if (!sp.isHit) {
+          drawEggSplatter(sceneMetrics.targetX + sp.dx, sceneMetrics.targetY + sp.dy, sp.radius, sp.seed);
+        }
+      }
+
+      // 5. Walead's Giant Binding Tree & Walead99 Tied to Trunk
+      drawWaleadAtTree(timeSec);
+
+      // 6. Hit Egg Splatters on Walead & Tree Trunk
+      for (const sp of state.splatters) {
+        if (sp.isHit) {
+          drawEggSplatter(sceneMetrics.targetX + sp.dx, sceneMetrics.targetY + sp.dy, sp.radius, sp.seed);
+        }
+      }
+
+      // 7. Surrounding Forest Canopy Trees (Top-down overlapping circles)
+      for (const tree of state.trees) {
+        const swayX = Math.sin(timeSec * 1.4 + tree.swayOffset) * 2.5;
+        const swayY = Math.cos(timeSec * 1.1 + tree.swayOffset) * 1.5;
+
+        // Tree shadow
+        ctx.fillStyle = "rgba(8, 20, 12, 0.38)";
+        ctx.beginPath();
+        ctx.arc(tree.x + 8, tree.y + 10, tree.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Outer foliage
+        const palette = ["#163822", "#1c472b", "#225433"];
+        ctx.fillStyle = palette[tree.shade];
+        ctx.beginPath();
+        ctx.arc(tree.x + swayX, tree.y + swayY, tree.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner foliage highlight
+        ctx.fillStyle = "#2b693f";
+        ctx.beginPath();
+        ctx.arc(tree.x + swayX - tree.r * 0.2, tree.y + swayY - tree.r * 0.2, tree.r * 0.62, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 8. Protagonist ("CELLDWELLER") & Basket of Eggs in the Foreground Opening
+      drawProtagonist(timeSec);
+
+      // 9. Flying Egg Projectile Arc
+      if (state.projectile) {
+        drawProjectileEgg(state.projectile);
+      }
+
+      // 10. Ambient Flying Forest Birds
+      for (const b of state.ambientBirds) {
+        drawTopDownBird(b, timeSec);
+      }
+
+      // 11. Floating Score Popups (+100 / -25)
+      for (const ft of state.floatingTexts) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.life);
+        ctx.font = "800 22px 'JetBrains Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#09130d";
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+
+      // 12. Comic Speech Bubble next to Walead when a sound plays
+      if (state.speechBubble.timer > 0 && state.speechBubble.text) {
+        drawSpeechBubble(sceneMetrics.targetX, sceneMetrics.targetY - 56, state.speechBubble.text, state.speechBubble.isHit);
+      }
+
+      ctx.restore();
+    }
+
+    function drawWaleadAtTree(timeSec) {
+      const tx = sceneMetrics.targetX;
+      const ty = sceneMetrics.targetY;
+
+      // Hit wobble or dodge wiggle
+      let offsetX = 0;
+      if (state.waleadHitAnim > 0) {
+        offsetX = Math.sin(state.waleadHitAnim * 38) * 9 * state.waleadHitAnim;
+      } else if (state.waleadDodgeAnim > 0) {
+        offsetX = Math.sin(state.waleadDodgeAnim * 20) * 6 * state.waleadDodgeAnim;
+      }
+
+      // Ground shadow under tree & Walead
+      ctx.fillStyle = "rgba(7, 18, 11, 0.42)";
+      ctx.beginPath();
+      ctx.ellipse(tx + 6, ty + 10, 44, 34, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Thick Oak Tree Trunk (Top-down cross-section / canopy behind him)
+      ctx.fillStyle = "#5c3a21";
+      ctx.beginPath();
+      ctx.arc(tx, ty - 14, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#3b2312";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Tree bark rings
+      ctx.strokeStyle = "#754c2d";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(tx, ty - 14, 18, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Walead99 Body (Tied to the front/south side of the tree trunk)
+      const wx = tx + offsetX;
+      const wy = ty + 14;
+
+      // Shoulders / Torso (Red/Orange shirt)
+      ctx.fillStyle = state.waleadHitAnim > 0.3 ? "#fef08a" : "#ef4444";
+      ctx.beginPath();
+      ctx.ellipse(wx, wy, 20, 13, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#7f1d1d";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Rope bindings wrapping around Walead & the tree trunk
+      ctx.strokeStyle = "#eab308";
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(wx - 21, wy - 3);
+      ctx.lineTo(wx + 21, wy - 3);
+      ctx.moveTo(wx - 20, wy + 4);
+      ctx.lineTo(wx + 20, wy + 4);
+      ctx.stroke();
+
+      // Walead Head (Top-down)
+      ctx.fillStyle = "#f1c27d";
+      ctx.beginPath();
+      ctx.arc(wx, wy + 2, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#451a03";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Dark Hair
+      ctx.fillStyle = "#1c1917";
+      ctx.beginPath();
+      ctx.arc(wx, wy - 2, 11.5, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Nameplate Tag above tree
+      ctx.font = "700 12px 'Fredoka', sans-serif";
+      ctx.textAlign = "center";
+      const label = "WALEAD99";
+      const badgeW = 78;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.82)";
+      ctx.beginPath();
+      ctx.roundRect(wx - badgeW / 2, ty - 54, badgeW, 19, 8);
+      ctx.fill();
+      ctx.fillStyle = "#fca5a5";
+      ctx.fillText(label, wx, ty - 40);
+    }
+
+    function drawProtagonist(timeSec) {
+      const px = sceneMetrics.playerX;
+      const py = sceneMetrics.playerY;
+      const breathe = Math.sin(timeSec * 3.5) * 1.5;
+
+      // Shadow
+      ctx.fillStyle = "rgba(7, 18, 11, 0.38)";
+      ctx.beginPath();
+      ctx.ellipse(px + 4, py + 8, 24, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Basket of White/Brown Eggs beside protagonist
+      const bx = px + 34;
+      const by = py + 6;
+      ctx.fillStyle = "#92400e";
+      ctx.beginPath();
+      ctx.arc(bx, by, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#451a03";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Eggs inside basket
+      const eggOffsets = [[-4, -4], [4, -3], [0, 4], [-5, 3], [5, 3]];
+      for (const [ex, ey] of eggOffsets) {
+        ctx.fillStyle = "#fefce8";
+        ctx.beginPath();
+        ctx.ellipse(bx + ex, by + ey, 4.2, 5.5, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#d6d3d1";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Protagonist Shoulders (Blue jacket)
+      ctx.fillStyle = "#2563eb";
+      ctx.beginPath();
+      ctx.ellipse(px, py + breathe, 22, 13, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#1e3a8a";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Throwing Arm
+      const armReach = state.projectile ? -14 : -4;
+      ctx.fillStyle = "#3b82f6";
+      ctx.beginPath();
+      ctx.ellipse(px + 18, py + armReach, 6, 10, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Head
+      ctx.fillStyle = "#ffdbac";
+      ctx.beginPath();
+      ctx.arc(px, py - 2 + breathe, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#451a03";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Cap / Hair facing north toward Walead
+      ctx.fillStyle = "#1e293b";
+      ctx.beginPath();
+      ctx.arc(px, py + 1 + breathe, 11.5, 0, Math.PI);
+      ctx.fill();
+
+      // Protagonist Label
+      ctx.font = "700 12px 'Fredoka', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(15, 23, 42, 0.82)";
+      ctx.beginPath();
+      ctx.roundRect(px - 48, py + 22, 96, 19, 8);
+      ctx.fill();
+      ctx.fillStyle = "#93c5fd";
+      ctx.fillText("CELLDWELLER", px, py + 36);
+    }
+
+    function drawProjectileEgg(proj) {
+      const t = proj.progress;
+      const x = proj.startX + (proj.endX - proj.startX) * t;
+      const y = proj.startY + (proj.endY - proj.startY) * t;
+
+      // Parabolic height arc (egg scales up mid-air as it arcs overhead)
+      const arcHeight = Math.sin(t * Math.PI);
+      const scale = 1 + arcHeight * 0.85;
+
+      // Ground shadow beneath flying egg
+      ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+      ctx.beginPath();
+      ctx.ellipse(x + arcHeight * 14, y + arcHeight * 14, 6, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Egg body
+      ctx.save();
+      ctx.translate(x, y - arcHeight * 24);
+      ctx.rotate(t * 12);
+      ctx.scale(scale, scale);
+
+      ctx.fillStyle = "#fffbeb";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 6.5, 8.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#d6d3d1";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawEggSplatter(x, y, radius, seed) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Egg white splat blob
+      ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
+      ctx.beginPath();
+      const lobes = 7;
+      for (let i = 0; i <= lobes * 2; i++) {
+        const angle = (i / (lobes * 2)) * Math.PI * 2;
+        const r = i % 2 === 0 ? radius : radius * (0.58 + Math.sin(seed + i) * 0.15);
+        const px = Math.cos(angle) * r;
+        const py = Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Bright yellow-orange egg yolk center
+      ctx.fillStyle = "#f59e0b";
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 0.44, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Yolk specular highlight
+      ctx.fillStyle = "#fef08a";
+      ctx.beginPath();
+      ctx.arc(-radius * 0.14, -radius * 0.14, radius * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawTopDownBird(bird, timeSec) {
+      const flap = Math.sin(timeSec * 14 + bird.wingPhase) * 6;
+      ctx.save();
+      ctx.translate(bird.x, bird.y);
+      ctx.strokeStyle = "#f8fafc";
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-8, flap);
+      ctx.quadraticCurveTo(-3, -4, 0, 0);
+      ctx.quadraticCurveTo(3, -4, 8, flap);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawSpeechBubble(x, y, text, isHit) {
+      ctx.save();
+      ctx.font = "700 13px 'Fredoka', sans-serif";
+      const metrics = ctx.measureText(text);
+      const padX = 12;
+      const boxW = Math.min(sceneMetrics.width - 24, Math.max(90, metrics.width + padX * 2));
+      const boxH = 28;
+      const bx = Math.max(12, Math.min(sceneMetrics.width - boxW - 12, x - boxW / 2));
+      const by = Math.max(58, y - boxH);
+
+      // Bubble fill & border
+      ctx.fillStyle = isHit ? "#ecfdf5" : "#fff1f2";
+      ctx.strokeStyle = isHit ? "#10b981" : "#f43f5e";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, boxW, boxH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      // Pointer triangle down toward Walead
+      ctx.fillStyle = isHit ? "#ecfdf5" : "#fff1f2";
+      ctx.beginPath();
+      ctx.moveTo(x - 6, by + boxH);
+      ctx.lineTo(x + 6, by + boxH);
+      ctx.lineTo(x, by + boxH + 7);
+      ctx.closePath();
+      ctx.fill();
+
+      // Text
+      ctx.fillStyle = "#0f172a";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, bx + boxW / 2, by + boxH / 2 + 1, boxW - 12);
+      ctx.restore();
+    }
+
+    // ----------------------------------------------------------------------------
+    // 11. MAIN ANIMATION & SIMULATION LOOP
+    // ----------------------------------------------------------------------------
+    function updateSimulation(dt, timeSec) {
+      // Decay screen shake & character animations
+      if (state.screenShake > 0) {
+        state.screenShake = Math.max(0, state.screenShake - dt * 42);
+      }
+      if (state.waleadHitAnim > 0) {
+        state.waleadHitAnim = Math.max(0, state.waleadHitAnim - dt * 2.5);
+      }
+      if (state.waleadDodgeAnim > 0) {
+        state.waleadDodgeAnim = Math.max(0, state.waleadDodgeAnim - dt * 2.5);
+      }
+      if (state.speechBubble.timer > 0) {
+        state.speechBubble.timer = Math.max(0, state.speechBubble.timer - dt);
+      }
+
+      // Update floating score popups
+      for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+        const ft = state.floatingTexts[i];
+        ft.y -= dt * 36;
+        ft.life -= dt * 1.1;
+        if (ft.life <= 0) {
+          state.floatingTexts.splice(i, 1);
+        }
+      }
+
+      // Update ambient visual birds
+      for (let i = state.ambientBirds.length - 1; i >= 0; i--) {
+        const b = state.ambientBirds[i];
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        if (b.x < -80 || b.x > sceneMetrics.width + 80) {
+          state.ambientBirds.splice(i, 1);
+        }
+      }
+
+      if (state.status !== "PLAYING") return;
+
+      // 1. Countdown 4-minute timer
+      const prevCeil = Math.ceil(state.timeLeft);
+      state.timeLeft -= dt;
+      if (Math.ceil(state.timeLeft) !== prevCeil) {
+        updateHUD();
+      }
+      if (state.timeLeft <= 0) {
+        endGame();
+        return;
+      }
+
+      // 2. Oscillate Precision Needle fast back & forth (only while not mid-throw)
+      if (!state.projectile) {
+        state.needlePos += state.needleDir * state.needleSpeed * dt;
+        if (state.needlePos >= 1) {
+          state.needlePos = 1;
+          state.needleDir = -1;
+        } else if (state.needlePos <= 0) {
+          state.needlePos = 0;
+          state.needleDir = 1;
+        }
+        updatePrecisionUI();
+      }
+
+      // 3. Advance active Egg Projectile
+      if (state.projectile) {
+        state.projectile.progress += dt / state.projectile.duration;
+        if (state.projectile.progress >= 1) {
+          const landed = state.projectile;
+          state.projectile = null;
+          resolveEggImpact(landed);
+        }
+      }
+
+      // 4. Random Forest Birds Sound Scheduler (plays 00_birds.wav on random intervals)
+      state.nextBirdAudioTimer -= dt;
+      if (state.nextBirdAudioTimer <= 0) {
+        triggerAmbientBirds();
+        // Schedule next bird sound randomly between 6.5 and 14.5 seconds
+        state.nextBirdAudioTimer = 6.5 + Math.random() * 8.0;
+      }
+    }
+
+    function gameLoop(timestamp) {
+      if (!state.lastTimestamp) state.lastTimestamp = timestamp;
+      const dt = Math.min(0.1, (timestamp - state.lastTimestamp) / 1000);
+      state.lastTimestamp = timestamp;
+
+      updateSimulation(dt, timestamp / 1000);
+      drawForestScene(timestamp / 1000);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ----------------------------------------------------------------------------
+    // 12. INPUT EVENT LISTENERS (MOUSE, TOUCH, KEYBOARD)
+    // ----------------------------------------------------------------------------
+    startBtn.addEventListener("click", startGame);
+    playAgainBtn.addEventListener("click", startGame);
+
+    throwBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      triggerThrowEgg();
+    });
+
+    // Clicking/tapping directly on the forest canvas also throws an egg during gameplay
+    canvas.addEventListener("click", () => {
+      if (state.status === "PLAYING") {
+        triggerThrowEgg();
+      }
+    });
+
+    // Keyboard shortcuts: SPACE or ENTER
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space" || e.code === "Enter") {
+        if (state.status === "PLAYING") {
+          e.preventDefault();
+          triggerThrowEgg();
+        } else if (state.status === "START") {
+          e.preventDefault();
+          startGame();
+        }
+      }
+    });
+
+    // Mute / Unmute Audio Toggle
+    muteBtn.addEventListener("click", () => {
+      soundBank.isMuted = !soundBank.isMuted;
+      if (soundBank.isMuted) {
+        muteIcon.textContent = "🔇";
+        muteLabel.textContent = "Muted";
+        if (soundBank.birds) soundBank.birds.pause();
+        if (soundBank.activeVoice) soundBank.activeVoice.pause();
+      } else {
+        muteIcon.textContent = "🔊";
+        muteLabel.textContent = "Sound ON";
+      }
+    });
+
+    // ----------------------------------------------------------------------------
+    // 13. INITIALIZATION ON WINDOW LOAD
+    // ----------------------------------------------------------------------------
+    window.onload = function () {
+      initAudioBank();
+      resizeCanvas();
+      updateHUD();
+      updatePrecisionUI();
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
