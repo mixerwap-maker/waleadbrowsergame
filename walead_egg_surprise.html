@@ -374,7 +374,7 @@
     <div id="start-screen" class="overlay-screen">
       <h1 class="overlay-title">Walead Egg Surprise</h1>
       <div class="intro-story">
-        Time for a omelette! Walead99 is finally caught and tied to a tree in the woods. Throw eggs at him and try to be as precise as can under a timer to dominate the scoreboard!
+        Time for an omelette! Walead99 is finally caught and tied to a tree in the woods. Throw eggs at him and try to be as precise as you can under a timer to dominate the scoreboard!
       </div>
       <div class="rules-grid">
         <div class="rule-card">
@@ -565,7 +565,7 @@
   // 0.0 = bottom (red), 0.5 = middle (yellow), 1.0 = top (bright green)
   let needlePos = 0.0;
   let needleDir = 1;
-  let needleSpeed = 1.65; // fast oscillation
+  let needleSpeed = 2.65; // fast oscillation
 
   // Coordinates in top-down view
   const playerPos = { x: 210, y: 270 };
@@ -668,12 +668,15 @@
 
     // Higher needlePos (greener area) = much higher chance of hitting Walead
     // NeedlePos 0.0 -> ~8% chance; NeedlePos 0.5 -> ~45% chance; NeedlePos 0.85+ -> ~92-98% chance
-    const hitProbability = Math.min(0.98, Math.max(0.06, Math.pow(needlePos, 1.35)));
+    const hitProbability = Math.min(0.98, Math.max(0.06, Math.pow(needlePos, 2.45)));
     const isHit = Math.random() < hitProbability;
 
     // Calculate target landing spot
-    let targetX = waleadPos.x;
-    let targetY = waleadPos.y;
+// Calculate target landing spot with random forest wind drift
+    const windDriftX = (Math.random() - 0.5) * 28;
+    const windDriftY = (Math.random() - 0.5) * 36;
+    let targetX = waleadPos.x + windDriftX;
+    let targetY = waleadPos.y + windDriftY;
 
     if (!isHit) {
       // Miss scatter around the tree/woods
